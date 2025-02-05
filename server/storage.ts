@@ -55,9 +55,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTask(userId: number, task: InsertTask): Promise<Task> {
+    const taskData = {
+      ...task,
+      userId,
+      dueDate: task.dueDate ? new Date(task.dueDate) : null,
+    };
+
     const [newTask] = await db
       .insert(tasks)
-      .values({ ...task, userId })
+      .values(taskData)
       .returning();
     return newTask;
   }
@@ -76,9 +82,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createEvent(userId: number, event: InsertEvent): Promise<Event> {
+    const eventData = {
+      ...event,
+      userId,
+      startDate: new Date(event.startDate),
+      endDate: new Date(event.endDate),
+    };
+
     const [newEvent] = await db
       .insert(events)
-      .values({ ...event, userId })
+      .values(eventData)
       .returning();
     return newEvent;
   }
