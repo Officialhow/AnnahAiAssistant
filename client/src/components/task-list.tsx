@@ -40,7 +40,7 @@ export default function TaskList() {
         task =>
           task.title.toLowerCase().includes(query) ||
           task.description?.toLowerCase().includes(query) ||
-          task.category.toLowerCase().includes(query)
+          (task.category?.toLowerCase() || '').includes(query)
       );
     }
 
@@ -50,14 +50,17 @@ export default function TaskList() {
 
       switch (sortField) {
         case "dueDate":
-          comparison = (a.dueDate ? new Date(a.dueDate).getTime() : 0) -
-                      (b.dueDate ? new Date(b.dueDate).getTime() : 0);
+          const aDate = a.dueDate ? new Date(a.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+          const bDate = b.dueDate ? new Date(b.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+          comparison = aDate - bDate;
           break;
         case "title":
           comparison = a.title.localeCompare(b.title);
           break;
         case "category":
-          comparison = a.category.localeCompare(b.category);
+          const aCategory = a.category || '';
+          const bCategory = b.category || '';
+          comparison = aCategory.localeCompare(bCategory);
           break;
       }
 
@@ -117,7 +120,7 @@ export default function TaskList() {
         <Card key={task.id}>
           <CardContent className="flex items-center gap-4 p-4">
             <Checkbox
-              checked={task.completed}
+              checked={task.completed || false}
               onCheckedChange={() => toggleTask(task.id)}
             />
             <div className="flex-1">
@@ -129,7 +132,7 @@ export default function TaskList() {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <Badge>{task.category}</Badge>
+              {task.category && <Badge>{task.category}</Badge>}
               {task.dueDate && (
                 <span className="text-sm text-muted-foreground">
                   {format(new Date(task.dueDate), "MMM d, yyyy")}

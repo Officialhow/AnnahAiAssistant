@@ -96,8 +96,7 @@ export default function TaskForm() {
                     <FormControl>
                       <Input 
                         type="datetime-local" 
-                        {...field}
-                        value={field.value || ''}
+                        value={field.value ? new Date(field.value).toISOString().slice(0, 16) : ''}
                         onChange={(e) => {
                           const value = e.target.value;
                           field.onChange(value ? new Date(value).toISOString() : undefined);
