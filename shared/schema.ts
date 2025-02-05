@@ -33,20 +33,27 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 
-export const insertTaskSchema = createInsertSchema(tasks).pick({
-  title: true,
-  description: true,
-  dueDate: true,
-  category: true,
-});
+// Modified task schema to handle string dates
+export const insertTaskSchema = createInsertSchema(tasks)
+  .pick({
+    title: true,
+    description: true,
+    category: true,
+  })
+  .extend({
+    dueDate: z.string().datetime().nullish(),
+  });
 
-export const insertEventSchema = createInsertSchema(events).pick({
-  title: true,
-  description: true,
-  startDate: true,
-  endDate: true,
-  recurrence: true,
-});
+export const insertEventSchema = createInsertSchema(events)
+  .pick({
+    title: true,
+    description: true,
+    recurrence: true,
+  })
+  .extend({
+    startDate: z.string().datetime(),
+    endDate: z.string().datetime(),
+  });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;

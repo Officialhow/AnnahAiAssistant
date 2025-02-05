@@ -9,9 +9,20 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertTaskSchema } from "@shared/schema";
 
 export default function TaskForm() {
-  const form = useForm<InsertTask>();
+  const form = useForm<InsertTask>({
+    resolver: zodResolver(insertTaskSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      category: "personal",
+      dueDate: undefined,
+    },
+  });
+
   const { toast } = useToast();
 
   const createTaskMutation = useMutation({
@@ -25,6 +36,13 @@ export default function TaskForm() {
       toast({
         title: "Task created",
         description: "Your task has been created successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to create task",
+        description: error.message,
+        variant: "destructive",
       });
     },
   });
@@ -56,7 +74,7 @@ export default function TaskForm() {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea {...field} />
+                    <Textarea {...field} value={field.value || ''} />
                   </FormControl>
                 </FormItem>
               )}
@@ -69,7 +87,12 @@ export default function TaskForm() {
                   <FormItem>
                     <FormLabel>Due Date</FormLabel>
                     <FormControl>
-                      <Input type="datetime-local" {...field} />
+                      <Input 
+                        type="datetime-local" 
+                        {...field} 
+                        value={field.value || ''} 
+                        onChange={(e) => field.onChange(e.target.value || undefined)}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -80,7 +103,7 @@ export default function TaskForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || 'personal'}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
