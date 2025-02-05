@@ -14,6 +14,7 @@ export interface IStorage {
 
   // Task methods
   getTasks(userId: number): Promise<Task[]>;
+  getAllTasks(): Promise<Task[]>;
   createTask(userId: number, task: InsertTask): Promise<Task>;
   completeTask(userId: number, taskId: number): Promise<Task>;
 
@@ -52,6 +53,10 @@ export class DatabaseStorage implements IStorage {
 
   async getTasks(userId: number): Promise<Task[]> {
     return await db.select().from(tasks).where(eq(tasks.userId, userId));
+  }
+
+  async getAllTasks(): Promise<Task[]> {
+    return await db.select().from(tasks);
   }
 
   async createTask(userId: number, task: InsertTask): Promise<Task> {

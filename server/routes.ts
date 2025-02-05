@@ -1,15 +1,56 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { WebSocketServer } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertTaskSchema, insertEventSchema } from "@shared/schema";
 
+const wsClients = new Set<WebSocket>();
+
+function checkUpcomingTasks() {
+  setInterval(async () => {
+    const now = new Date();
+    const thirtyMinutesFromNow = new Date(now.getTime() + 30 * 60000);
+
+    for (const ws of wsClients) {
+      if (ws.readyState === WebSocket.OPEN) {
+        const tasks = await storage.getAllTasks();
+        const upcomingTasks = tasks.filter(task => {
+          if (task.dueDate) {
+            const dueDate = new Date(task.dueDate);
+            return dueDate > now && dueDate <= thirtyMinutesFromNow && !task.completed;
+          }
+          return false;
+        });
+
+        for (const task of upcomingTasks) {
+          ws.send(JSON.stringify({
+            type: 'notification',
+            message: `Task "${task.title}" is due in less than 30 minutes`,
+            showBrowserNotification: true
+          }));
+        }
+      }
+    }
+  }, 60000); // Check every minute
+}
+
 export function registerRoutes(app: Express): Server {
   setupAuth(app);
-  
+
   const httpServer = createServer(app);
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+
+  wss.on('connection', (ws) => {
+    wsClients.add(ws);
+
+    ws.on('close', () => {
+      wsClients.delete(ws);
+    });
+  });
+
+  // Start checking for upcoming tasks
+  checkUpcomingTasks();
 
   // Tasks API
   app.get("/api/tasks", async (req, res) => {
@@ -43,14 +84,6 @@ export function registerRoutes(app: Express): Server {
     const parsed = insertEventSchema.parse(req.body);
     const event = await storage.createEvent(req.user.id, parsed);
     res.json(event);
-  });
-
-  // WebSocket notifications
-  wss.on('connection', (ws) => {
-    ws.on('message', (message) => {
-      // Handle real-time notifications
-      ws.send(JSON.stringify({ type: 'notification', message }));
-    });
   });
 
   return httpServer;
