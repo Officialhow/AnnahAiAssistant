@@ -1,6 +1,6 @@
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "./ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { useForm } from "react-hook-form";
@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertTaskSchema } from "@shared/schema";
+import { Loader2 } from "lucide-react";
 
 export default function TaskForm() {
   const form = useForm<InsertTask>({
@@ -47,6 +48,10 @@ export default function TaskForm() {
     },
   });
 
+  const onSubmit = form.handleSubmit((data) => {
+    createTaskMutation.mutate(data);
+  });
+
   return (
     <Card>
       <CardHeader>
@@ -54,7 +59,7 @@ export default function TaskForm() {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit((data) => createTaskMutation.mutate(data))} className="space-y-4">
+          <form onSubmit={onSubmit} className="space-y-4">
             <FormField
               control={form.control}
               name="title"
@@ -64,6 +69,7 @@ export default function TaskForm() {
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -76,6 +82,7 @@ export default function TaskForm() {
                   <FormControl>
                     <Textarea {...field} value={field.value || ''} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -89,11 +96,15 @@ export default function TaskForm() {
                     <FormControl>
                       <Input 
                         type="datetime-local" 
-                        {...field} 
-                        value={field.value || ''} 
-                        onChange={(e) => field.onChange(e.target.value || undefined)}
+                        {...field}
+                        value={field.value || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          field.onChange(value ? new Date(value).toISOString() : undefined);
+                        }}
                       />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -103,7 +114,11 @@ export default function TaskForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || 'personal'}>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value || 'personal'}
+                      defaultValue="personal"
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select category" />
@@ -115,12 +130,24 @@ export default function TaskForm() {
                         <SelectItem value="shopping">Shopping</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-            <Button type="submit" disabled={createTaskMutation.isPending}>
-              Add Task
+            <Button 
+              type="submit" 
+              disabled={createTaskMutation.isPending}
+              className="w-full"
+            >
+              {createTaskMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adding Task...
+                </>
+              ) : (
+                'Add Task'
+              )}
             </Button>
           </form>
         </Form>
